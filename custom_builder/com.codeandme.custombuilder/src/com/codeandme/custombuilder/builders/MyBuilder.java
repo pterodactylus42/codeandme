@@ -41,24 +41,42 @@ public class MyBuilder extends IncrementalProjectBuilder {
 	protected IProject[] build(final int kind, final Map<String, String> args, final IProgressMonitor monitor)
 			throws CoreException {
 
-		printToConsole("MyBuilder.build triggered");
-
 		getProject();
 
 		switch (kind) {
 
 		case FULL_BUILD:
+			fullBuild(monitor);
 			break;
 
 		case INCREMENTAL_BUILD:
-			break;
-
 		case AUTO_BUILD:
+			IResourceDelta delta = getDelta(getProject());
+			if (delta == null) {
+				fullBuild(monitor);
+			} else {
+				incrementalBuild(delta, monitor);
+			}
 			break;
 		}
 
 		return null;
 	}
+	
+	protected void fullBuild(final IProgressMonitor monitor)
+			throws CoreException {
+		try {
+			getProject().accept(new MyResourceVisitor());
+		} catch (CoreException e) {
+			e.printStackTrace();
+		}
+	}
+
+	protected void incrementalBuild(IResourceDelta delta,
+			IProgressMonitor monitor) throws CoreException {
+		delta.accept(new MyDeltaVisitor());
+	}
+
 	
 	class MyDeltaVisitor implements IResourceDeltaVisitor {
 		@Override
@@ -92,7 +110,7 @@ public class MyBuilder extends IncrementalProjectBuilder {
 	}
 	
 	private void process(IResource resource) {
-		printToConsole("process resource" + resource.getName());
+		printToConsole("process resource " + resource.getName());
 		
 	}
 	
